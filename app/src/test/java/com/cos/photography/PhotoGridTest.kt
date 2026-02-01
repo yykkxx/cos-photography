@@ -17,12 +17,12 @@ class PhotoGridTest {
         )
 
         cases.forEach { (index, expected) ->
-            val expectedX = (index % MainActivity.PhotoGridConfig.GRID_SIZE) *
+            val computedX = (index % MainActivity.PhotoGridConfig.GRID_SIZE) *
                 MainActivity.PhotoGridConfig.CELL_SIZE
-            val expectedY = (index / MainActivity.PhotoGridConfig.GRID_SIZE) *
+            val computedY = (index / MainActivity.PhotoGridConfig.GRID_SIZE) *
                 MainActivity.PhotoGridConfig.CELL_SIZE
-            assertEquals(expected.first, expectedX)
-            assertEquals(expected.second, expectedY)
+            assertEquals(expected.first, computedX)
+            assertEquals(expected.second, computedY)
         }
     }
 }
