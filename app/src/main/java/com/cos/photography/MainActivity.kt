@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.no_images_selected, Toast.LENGTH_SHORT).show()
             return
         }
-        lifecycleScope.launch(Dispatchers.Default) {
+        lifecycleScope.launch(Dispatchers.IO) {
             val bitmap = Bitmap.createBitmap(
                 PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,
                 PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,

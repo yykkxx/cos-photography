@@ -7,17 +7,20 @@ class PhotoGridTest {
 
     @Test
     fun gridCellIndexMapsToCoordinates() {
-        val gridSize = MainActivity.PhotoGridConfig.GRID_SIZE
-        val cellSize = MainActivity.PhotoGridConfig.CELL_SIZE
         val cases = listOf(
             0 to (0 to 0),
-            5 to (2 * cellSize to cellSize),
-            8 to (2 * cellSize to 2 * cellSize)
+            5 to (2 * MainActivity.PhotoGridConfig.CELL_SIZE to MainActivity.PhotoGridConfig.CELL_SIZE),
+            8 to (
+                2 * MainActivity.PhotoGridConfig.CELL_SIZE to
+                    2 * MainActivity.PhotoGridConfig.CELL_SIZE
+            )
         )
 
         cases.forEach { (index, expected) ->
-            val expectedX = (index % gridSize) * cellSize
-            val expectedY = (index / gridSize) * cellSize
+            val expectedX = (index % MainActivity.PhotoGridConfig.GRID_SIZE) *
+                MainActivity.PhotoGridConfig.CELL_SIZE
+            val expectedY = (index / MainActivity.PhotoGridConfig.GRID_SIZE) *
+                MainActivity.PhotoGridConfig.CELL_SIZE
             assertEquals(expected.first, expectedX)
             assertEquals(expected.second, expectedY)
         }
