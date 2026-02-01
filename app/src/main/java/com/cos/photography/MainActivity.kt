@@ -14,17 +14,23 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.cos.photography.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal object PhotoGridConfig {
         const val GRID_SIZE = 3
         const val CELL_SIZE = 360
@@ -100,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.no_images_selected, Toast.LENGTH_SHORT).show()
             return
         }
-        Thread {
+        lifecycleScope.launch(Dispatchers.Default) {
             val bitmap = Bitmap.createBitmap(
                 PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,
                 PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,
@@ -124,12 +130,12 @@ class MainActivity : AppCompatActivity() {
                 canvas.drawBitmap(scaled, x.toFloat(), y.toFloat(), paint)
             }
             val output = saveBitmap(bitmap, "nine_grid")
-            runOnUiThread {
+            withContext(Dispatchers.Main) {
                 binding.previewImage.setImageURI(output)
                 binding.previewImage.tag = output
-                Toast.makeText(this, R.string.nine_grid_done, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, R.string.nine_grid_done, Toast.LENGTH_SHORT).show()
             }
-        }.start()
+        }
     }
 
     private fun saveBitmap(bitmap: Bitmap, prefix: String): Uri {
