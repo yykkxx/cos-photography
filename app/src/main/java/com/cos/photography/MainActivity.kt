@@ -8,7 +8,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +25,11 @@ import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
+    internal object PhotoGridConfig {
+        const val GRID_SIZE = 3
+        const val CELL_SIZE = 360
+    }
+
     private lateinit var binding: ActivityMainBinding
     private val images = mutableListOf<Uri>()
     private val adapter = PhotoAdapter(images) { uri ->
@@ -36,9 +40,13 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         if (uris.isNotEmpty()) {
+            val oldSize = images.size
             images.clear()
             images.addAll(uris.take(9))
-            adapter.notifyDataSetChanged()
+            if (oldSize > 0) {
+                adapter.notifyItemRangeRemoved(0, oldSize)
+            }
+            adapter.notifyItemRangeInserted(0, images.size)
             binding.previewImage.setImageURI(images.first())
         } else {
             Toast.makeText(this, R.string.no_images_selected, Toast.LENGTH_SHORT).show()
@@ -62,11 +70,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.actionGrid.setOnClickListener {
-            generateNineGrid()?.let { gridUri ->
-                binding.previewImage.setImageURI(gridUri)
-                binding.previewImage.tag = gridUri
-                Toast.makeText(this, R.string.nine_grid_done, Toast.LENGTH_SHORT).show()
-            }
+            generateNineGridAsync()
         }
 
         binding.actionShare.setOnClickListener {
@@ -82,7 +86,7 @@ class MainActivity : AppCompatActivity() {
         val bitmap = drawable.toBitmap().copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(bitmap)
         val overlay = Paint().apply {
-            color = Color.parseColor("#33FF4081")
+            color = getColor(R.color.edit_overlay)
         }
         canvas.drawRect(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat(), overlay)
         val output = saveBitmap(bitmap, "edited")
@@ -91,28 +95,41 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.edit_applied, Toast.LENGTH_SHORT).show()
     }
 
-    private fun generateNineGrid(): Uri? {
+    private fun generateNineGridAsync() {
         if (images.isEmpty()) {
             Toast.makeText(this, R.string.no_images_selected, Toast.LENGTH_SHORT).show()
-            return null
+            return
         }
-        val gridSize = 3
-        val cellSize = 360
-        val bitmap = Bitmap.createBitmap(cellSize * gridSize, cellSize * gridSize, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
+        Thread {
+            val bitmap = Bitmap.createBitmap(
+                PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,
+                PhotoGridConfig.CELL_SIZE * PhotoGridConfig.GRID_SIZE,
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.WHITE)
 
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        images.take(9).forEachIndexed { index, uri ->
-            val input = contentResolver.openInputStream(uri)
-            val source = input?.use { BitmapFactory.decodeStream(it) } ?: return@forEachIndexed
-            val scaled = Bitmap.createScaledBitmap(source, cellSize, cellSize, true)
-            val x = (index % gridSize) * cellSize
-            val y = (index / gridSize) * cellSize
-            canvas.drawBitmap(scaled, x.toFloat(), y.toFloat(), paint)
-        }
-
-        return saveBitmap(bitmap, "nine_grid")
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            images.take(9).forEachIndexed { index, uri ->
+                val input = contentResolver.openInputStream(uri)
+                val source = input?.use { BitmapFactory.decodeStream(it) } ?: return@forEachIndexed
+                val scaled = Bitmap.createScaledBitmap(
+                    source,
+                    PhotoGridConfig.CELL_SIZE,
+                    PhotoGridConfig.CELL_SIZE,
+                    true
+                )
+                val x = (index % PhotoGridConfig.GRID_SIZE) * PhotoGridConfig.CELL_SIZE
+                val y = (index / PhotoGridConfig.GRID_SIZE) * PhotoGridConfig.CELL_SIZE
+                canvas.drawBitmap(scaled, x.toFloat(), y.toFloat(), paint)
+            }
+            val output = saveBitmap(bitmap, "nine_grid")
+            runOnUiThread {
+                binding.previewImage.setImageURI(output)
+                binding.previewImage.tag = output
+                Toast.makeText(this, R.string.nine_grid_done, Toast.LENGTH_SHORT).show()
+            }
+        }.start()
     }
 
     private fun saveBitmap(bitmap: Bitmap, prefix: String): Uri {

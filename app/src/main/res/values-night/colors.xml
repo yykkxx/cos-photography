@@ -5,4 +5,5 @@
     <color name="surface">#1F1B24</color>
     <color name="on_surface">#F5F5F5</color>
     <color name="preview_border">#3A3A3A</color>
+    <color name="edit_overlay">#33FF4081</color>
 </resources>
